@@ -1,0 +1,20 @@
+{
+  "name": "eluno-mirror-matchmaker",
+  "version": "1.0.0",
+  "description": "Matchmaking broker server for PeerJS P2P card game",
+  "main": "matchmaker.js",
+  "scripts": {
+    "start": "node matchmaker.js",
+    "dev": "nodemon matchmaker.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": ["peerjs", "matchmaking", "p2p", "socket.io"],
+  "author": "",
+  "license": "MIT"
+}

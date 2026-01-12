@@ -1,0 +1,46 @@
+# Quick Deployment Instructions
+
+## 1. Install Dependencies
+npm install
+
+## 2. Run Locally
+npm start
+
+## 3. Test Locally
+- Open card4.html in browser
+- Click "FIND MATCH"
+- Open another tab with same file
+- Click "FIND MATCH"
+- They should connect automatically
+
+## 4. Deploy to Production
+
+### Option A: Glitch (Easiest)
+1. Go to glitch.com
+2. Create new Node.js project
+3. Copy matchmaker.js → server.js
+4. Copy package.json → package.json
+5. Run `refresh` in terminal
+6. Use the provided URL
+
+### Option B: Render.com
+1. Push to GitHub
+2. Create Web Service on Render
+3. Connect GitHub repo
+4. Set start command: `node matchmaker.js`
+5. Deploy
+
+### Option C: Heroku
+1. `heroku create your-app-name`
+2. `git push heroku main`
+3. `heroku open`
+
+## 5. Update HTML
+In card4.html, change:
+const BROKER_URL = "http://localhost:3000";
+
+To your actual URL:
+const BROKER_URL = "https://your-app.onrender.com";
+
+## 6. Share
+Share the updated card4.html file with players. They just need to click "FIND MATCH"!
