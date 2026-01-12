@@ -948,7 +948,20 @@ function handleNetworkData(data) {
         projectiles = []; 
         showFloatingText("PARRIED!", width/2, height/2, COLORS.mirror);
         playSound('parry');
-        spawnProjectiles(true, false); 
+        spawnProjectiles(true, false);
+        
+        // Handle opponent's mirror card removal from their hand
+        if (data.card && data.card.suit === 'mirror') {
+            // Remove the mirror card from opponent's hand visually
+            if (opponentHand.length > 0) {
+                opponentHand.pop(); // Remove the card they used for parry
+            }
+            // Add the mirror card to discard pile to show it was played
+            let mirrorCard = new Card('mirror', 0, false);
+            mirrorCard.x = width/2; mirrorCard.y = -100;
+            mirrorCard.targetX = width/2; mirrorCard.targetY = height/2;
+            discardPile.push(mirrorCard);
+        }
     } else if (data.type === 'REQUEST_REMATCH') {
         rematchOpp = true;
         showFloatingText("Opponent wants rematch!", width/2, height/2, "#fff");
@@ -1059,7 +1072,7 @@ function playerInput(cardIndex) {
             showFloatingText("MIRROR PARRY!", width/2, height/2, COLORS.mirror);
             playSound('parry');
             canParry = false;
-            conn.send({ type: 'PARRY_SUCCESS' });
+            conn.send({ type: 'PARRY_SUCCESS', card: { suit: card.suit, value: card.value } });
             return true;
         } else {
             showFloatingText("USE MIRROR!", card.x, card.y - 70, "red");
