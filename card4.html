@@ -16,7 +16,7 @@
             touch-action: none;
             user-select: none;
             -webkit-user-select: none;
-            background-image: url('https://github.com/viqihakbarrr-cyber/kkk/blob/main/BG.png?raw=true');
+            background-image: url('https://github.com/viqihakbarrr-cyber/kkk/blob/main/BG.jpg?raw=true');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -46,27 +46,60 @@
             z-index: 200;
             backdrop-filter: blur(8px);
         }
-
+        /* --- LOADING SCREEN BARU --- */
         #loading-layer {
-            background: #000;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            justify-content: flex-end; /* Posisi di bawah */
+            align-items: center;
             z-index: 300;
-            display: flex;
+            
+            /* Background Baru */
+            background-image: url('https://github.com/viqihakbarrr-cyber/kkk/blob/main/IceLoadS.jpg?raw=true');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
         }
-        
-        .spinner {
-            width: 60px; height: 60px;
-            border: 6px solid #333;
-            border-top: 6px solid #9933FF;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
+
+        /* Container untuk bar dan text di bawah */
+        .loading-container {
+            width: 80%;
+            max-width: 600px;
+            margin-bottom: 50px; /* Jarak dari bawah layar */
+            text-align: center;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        .loading-text { 
-            color: #9933FF; font-size: 24px; letter-spacing: 3px; font-weight: bold;
-            text-shadow: 0 0 10px rgba(153, 51, 255, 0.5);
+
+        .loading-detail-text {
+            color: #9933FF;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 5px rgba(0,0,0,0.8);
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
         }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #333;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #7700FF, #CC44FF);
+            box-shadow: 0 0 10px #9933FF;
+            transition: width 0.2s ease-out;
+        }
+
+
 
         .modal-box {
             background: rgba(255, 255, 255, 0.95);
@@ -146,10 +179,16 @@
         </div>
     </div>
 
-    <div id="loading-layer">
-        <div class="spinner"></div>
-        <div class="loading-text" id="loading-msg">LOADING 0%</div>
+        <div id="loading-layer">
+        <div class="loading-container">
+            <div class="loading-detail-text" id="loading-text-detail">INITIALIZING SYSTEM... 0%</div>
+            
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="loading-bar-fill"></div>
+            </div>
+        </div>
     </div>
+
 
     <div id="lobby-screen" class="hidden">
         <div class="modal-box" id="lobby-main">
@@ -195,13 +234,15 @@ const SFX_SPRITES = {
     flip:   { start: 2,  dur: 1 },
     play:   { start: 3,  dur: 1 },
     error:  { start: 6,  dur: 1 },
-    crit:   { start: 8,  dur: 2 },
-    moon:   { start: 15, dur: 7 },
-    parry:  { start: 11, dur: 3 }
+    crit:   { start: 9,  dur: 4 },
+    moon:   { start: 19, dur: 5 },
+    parry:  { start: 14, dur: 3 }
 };
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let sfxBuffer = null;
+let bgmNode = null; // Variabel baru untuk BGM
+let bgmGainNode = null;
 
 async function loadAudioBuffer() {
     try {
@@ -211,10 +252,14 @@ async function loadAudioBuffer() {
         sfxBuffer = await audioCtx.decodeAudioData(arrayBuffer);
         return true;
     } catch (e) {
-        document.getElementById('loading-msg').innerText = "AUDIO FAILED (CONTINUING...)";
+        console.warn("Audio failed to load:", e);
+        // Gunakan ID yang baru jika error
+        const detailText = document.getElementById('loading-text-detail');
+        if(detailText) detailText.innerText = "AUDIO FAILED (SKIPPING...)";
         return false; 
     }
 }
+
 
 function playSound(type) {
     if (!sfxBuffer) return;
@@ -226,6 +271,36 @@ function playSound(type) {
         if(type === 'parry') source.playbackRate.value = 1.5; 
         source.connect(audioCtx.destination);
         source.start(0, sprite.start, sprite.dur);
+    }
+}
+
+// === TAMBAHKAN FUNGSI INI UNTUK BGM ===
+function startBGM() {
+    // Cek jika audio context belum aktif atau buffer belum siap atau BGM sudah jalan
+    if (!sfxBuffer || bgmNode) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    try {
+        bgmNode = audioCtx.createBufferSource();
+        bgmNode.buffer = sfxBuffer;
+        
+        // Loop settings: 00:40 sampai 02:53
+        // 02:53 = (2 * 60) + 53 = 173 detik
+        bgmNode.loop = true;
+        bgmNode.loopStart = 40; 
+        bgmNode.loopEnd = 173; 
+
+        bgmGainNode = audioCtx.createGain();
+        bgmGainNode.gain.value = 1.0; // Volume 100%
+
+        bgmNode.connect(bgmGainNode);
+        bgmGainNode.connect(audioCtx.destination);
+
+        // Mulai play dari detik ke-40
+        bgmNode.start(0, 40);
+        console.log("BGM Started");
+    } catch (e) {
+        console.error("BGM Error:", e);
     }
 }
 
@@ -245,35 +320,43 @@ let assetsLoaded = false;
 function loadAssets() {
     let loadedCount = 0;
     const imgKeys = Object.keys(ASSETS_URL);
-    const total = imgKeys.length + 1; 
-    const msg = document.getElementById('loading-msg');
+    const total = imgKeys.length + 1; // +1 untuk Audio
+    
+    // Ambil elemen DOM baru
+    const barFill = document.getElementById('loading-bar-fill');
+    const textDetail = document.getElementById('loading-text-detail');
 
-    function updateProgress() {
+    function updateProgress(itemName) {
         loadedCount++;
         const percent = Math.round((loadedCount / total) * 100);
-        msg.innerText = `LOADING ${percent}%`;
+        
+        // Update tampilan Loading Screen
+        if(barFill) barFill.style.width = `${percent}%`;
+        if(textDetail) textDetail.innerText = `LOADING ${itemName || 'DATA'}... (${percent}%)`;
+
         if(loadedCount >= total) {
             assetsLoaded = true;
             setTimeout(() => {
                 document.getElementById('loading-layer').classList.add('hidden');
                 document.getElementById('lobby-screen').classList.remove('hidden');
-                // Check broker connection
                 checkBrokerConnection();
             }, 800);
         }
     }
 
+    // Load Images
     imgKeys.forEach(key => {
         const img = new Image();
         img.src = ASSETS_URL[key];
-        img.onload = updateProgress;
-        img.onerror = () => { console.warn("Failed asset:", key); updateProgress(); };
+        img.onload = () => updateProgress(key.toUpperCase());
+        img.onerror = () => { console.warn("Failed asset:", key); updateProgress(key.toUpperCase()); };
         IMAGES[key] = img;
     });
 
-    loadAudioBuffer().then(updateProgress);
+    // Load Audio
+    loadAudioBuffer().then(() => updateProgress("AUDIO SYSTEM"));
 }
-loadAssets();
+
 
 // --- KONFIGURASI NETWORK ---
 let peer = null;
@@ -609,6 +692,7 @@ function checkBrokerConnection() {
 }
 
 function startMatchmaking() {
+  startBGM();
     if (isSearching) return;
     
     // Check broker first
@@ -1454,6 +1538,11 @@ function getCardAt(x, y) {
 }
 
 function onPointerDown(e) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    startBGM(); // Mencoba menyalakan BGM saat interaksi pertama
+    // =====================
+
+    if (gameState !== 'PLAYING' || isAnimating || (turn !== 'me' && !canParry)) return;
     if (gameState !== 'PLAYING' || isAnimating || (turn !== 'me' && !canParry)) return;
     
     if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -1561,6 +1650,7 @@ function showFloatingText(txt, x, y, c) {
 }
 
 resize();
+loadAssets();
 loop();
 </script>
 </body>
